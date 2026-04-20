@@ -9,7 +9,7 @@ import { StudentModal } from "@/components/StudentModal"
 import { GradesModal } from "@/components/GradesModal"
 import { apiGetStudents, apiAddStudent, apiUpdateStudent, Student } from "@/lib/api"
 
-const MONTHS = ["Сен", "Окт", "Ноя", "Дек", "Янв", "Фев", "Мар", "Апр"]
+const MONTHS = ["Сен", "Окт", "Ноя", "Дек", "Янв", "Фев", "Мар", "Апр", "Май", "Июн"]
 
 function getScoreColor(score: number) {
   return score >= 70 ? "text-green-400" : "text-red-400"

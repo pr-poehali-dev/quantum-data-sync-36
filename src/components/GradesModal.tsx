@@ -8,7 +8,8 @@ import { Student, apiUpdateGrade } from "@/lib/api"
 const MONTHS = [
   { label: "Сен", year: 2025 }, { label: "Окт", year: 2025 }, { label: "Ноя", year: 2025 },
   { label: "Дек", year: 2025 }, { label: "Янв", year: 2026 }, { label: "Фев", year: 2026 },
-  { label: "Мар", year: 2026 }, { label: "Апр", year: 2026 },
+  { label: "Мар", year: 2026 }, { label: "Апр", year: 2026 }, { label: "Май", year: 2026 },
+  { label: "Июн", year: 2026 },
 ]
 
 function getScoreColor(score: number | null) {

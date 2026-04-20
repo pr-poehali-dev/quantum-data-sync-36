@@ -3,6 +3,7 @@ import { DashboardHeader } from "@/components/DashboardHeader"
 import { StatsCards } from "@/components/StatsCards"
 import { StudentsTable } from "@/components/StudentsTable"
 import { GradesChart } from "@/components/GradesChart"
+import { RemarksTable } from "@/components/RemarksTable"
 
 interface Props {
   username: string
@@ -28,8 +29,8 @@ export default function Index({ username, onLogout }: Props) {
               <p className="text-muted-foreground">Ежемесячные контрольные работы и среднегодовые результаты</p>
             </div>
             <StatsCards />
-            <GradesChart />
-            <StudentsTable />
+            <RemarksTable />
+            <StudentsTable showAll />
           </div>
         )}
         {activeTab === "students" && (

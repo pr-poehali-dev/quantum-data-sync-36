@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS remarks (
+  id SERIAL PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  text TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);

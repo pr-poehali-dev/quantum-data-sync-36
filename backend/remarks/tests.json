@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "name": "Get remarks",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"remarks": []},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

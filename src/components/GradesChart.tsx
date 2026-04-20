@@ -4,9 +4,10 @@ import { Badge } from "@/components/ui/badge"
 import Icon from "@/components/ui/icon"
 import { apiGetStudents, Student } from "@/lib/api"
 
-const MONTHS = ["Сен", "Окт", "Ноя", "Дек", "Янв", "Фев", "Мар", "Апр"]
+const MONTHS = ["Сен", "Окт", "Ноя", "Дек", "Янв", "Фев", "Мар", "Апр", "Май", "Июн"]
 const MONTH_YEARS: Record<string, number> = {
-  Сен: 2025, Окт: 2025, Ноя: 2025, Дек: 2025, Янв: 2026, Фев: 2026, Мар: 2026, Апр: 2026,
+  Сен: 2025, Окт: 2025, Ноя: 2025, Дек: 2025,
+  Янв: 2026, Фев: 2026, Мар: 2026, Апр: 2026, Май: 2026, Июн: 2026,
 }
 
 const MIN_SCORE = 0

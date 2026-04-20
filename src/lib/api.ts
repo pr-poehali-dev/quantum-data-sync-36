@@ -2,6 +2,7 @@ const URLS = {
   auth: 'https://functions.poehali.dev/2898c68e-1cb8-4052-b336-c63380540184',
   grades: 'https://functions.poehali.dev/573d36b0-7035-4966-9cc2-4f0dd28de835',
   students: 'https://functions.poehali.dev/e463755e-48b0-432b-8c2c-03150bb6b680',
+  remarks: 'https://functions.poehali.dev/d3678517-7c39-450d-80ff-f9f8d95f76df',
 }
 
 export async function apiLogin(username: string, password: string) {
@@ -58,4 +59,28 @@ export interface Student {
   group: string
   average: number
   grades: Grade[]
+}
+
+export interface Remark {
+  id: number
+  student_id: number
+  student_name: string
+  group: string
+  text: string
+  created_at: string
+}
+
+export async function apiGetRemarks() {
+  const r = await fetch(URLS.remarks)
+  const data = await r.json()
+  return data.remarks as Remark[]
+}
+
+export async function apiAddRemark(student_id: number, text: string) {
+  const r = await fetch(URLS.remarks, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ student_id, text }),
+  })
+  return r.json()
 }
