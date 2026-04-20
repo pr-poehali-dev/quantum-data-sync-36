@@ -4,6 +4,7 @@ import { StatsCards } from "@/components/StatsCards"
 import { StudentsTable } from "@/components/StudentsTable"
 import { GradesChart } from "@/components/GradesChart"
 import { RemarksTable } from "@/components/RemarksTable"
+import { ExpelledTable } from "@/components/ExpelledTable"
 
 interface Props {
   username: string
@@ -31,6 +32,7 @@ export default function Index({ username, onLogout }: Props) {
             <StatsCards />
             <RemarksTable />
             <StudentsTable showAll />
+            <ExpelledTable />
           </div>
         )}
         {activeTab === "students" && (
@@ -40,13 +42,14 @@ export default function Index({ username, onLogout }: Props) {
               <p className="text-muted-foreground">Все зарегистрированные студенты и их результаты</p>
             </div>
             <StudentsTable showAll />
+            <ExpelledTable />
           </div>
         )}
         {activeTab === "grades" && (
           <div className="space-y-6 animate-fade-in-up">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-1">Результаты контрольных</h1>
-              <p className="text-muted-foreground">Ежемесячные результаты и среднегодовой расчёт</p>
+              <p className="text-muted-foreground">Ежемесячные результаты, конверсия и среднегодовой расчёт</p>
             </div>
             <GradesChart showDetailed />
           </div>

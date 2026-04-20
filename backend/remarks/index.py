@@ -1,11 +1,11 @@
-"""CRUD замечаний по студентам"""
+"""CRUD замечаний: список, добавление, редактирование, удаление"""
 import json
 import os
 import psycopg2
 
 CORS = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
 }
 
@@ -17,6 +17,7 @@ def handler(event: dict, context) -> dict:
         return {'statusCode': 200, 'headers': CORS, 'body': ''}
 
     method = event.get('httpMethod', 'GET')
+    params = event.get('queryStringParameters') or {}
 
     if method == 'GET':
         conn = get_conn()
@@ -49,5 +50,30 @@ def handler(event: dict, context) -> dict:
         conn.commit()
         conn.close()
         return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True, 'id': new_id})}
+
+    if method == 'PUT':
+        body = json.loads(event.get('body') or '{}')
+        remark_id = body.get('id')
+        text = body.get('text', '').strip()
+        if not remark_id or not text:
+            return {'statusCode': 400, 'headers': CORS, 'body': json.dumps({'error': 'Заполните все поля'})}
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute('UPDATE remarks SET text=%s WHERE id=%s', (text, remark_id))
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
+
+    if method == 'DELETE':
+        body = json.loads(event.get('body') or '{}')
+        remark_id = body.get('id')
+        if not remark_id:
+            return {'statusCode': 400, 'headers': CORS, 'body': json.dumps({'error': 'ID обязателен'})}
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute('DELETE FROM remarks WHERE id=%s', (remark_id,))
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
 
     return {'statusCode': 405, 'headers': CORS, 'body': json.dumps({'error': 'Method not allowed'})}

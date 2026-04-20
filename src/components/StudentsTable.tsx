@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Icon from "@/components/ui/icon"
 import { StudentModal } from "@/components/StudentModal"
 import { GradesModal } from "@/components/GradesModal"
-import { apiGetStudents, apiAddStudent, apiUpdateStudent, Student } from "@/lib/api"
+import { apiGetStudents, apiAddStudent, apiUpdateStudent, apiExpelStudent, Student } from "@/lib/api"
 
 const MONTHS = ["Сен", "Окт", "Ноя", "Дек", "Янв", "Фев", "Мар", "Апр", "Май", "Июн"]
 
@@ -70,6 +70,11 @@ export function StudentsTable({ showAll }: Props) {
   async function handleEdit(name: string, group: string) {
     if (!editStudent) return
     await apiUpdateStudent(editStudent.id, name, group)
+    await load()
+  }
+
+  async function handleExpel(id: number, comment: string) {
+    await apiExpelStudent(id, comment)
     await load()
   }
 
@@ -215,6 +220,7 @@ export function StudentsTable({ showAll }: Props) {
         open={!!editStudent}
         onClose={() => setEditStudent(null)}
         onSave={handleEdit}
+        onExpel={handleExpel}
         student={editStudent}
       />
       <GradesModal

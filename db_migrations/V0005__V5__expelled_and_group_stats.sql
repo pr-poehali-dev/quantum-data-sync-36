@@ -1,0 +1,14 @@
+ALTER TABLE students ADD COLUMN IF NOT EXISTS expelled BOOLEAN DEFAULT FALSE;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS expel_comment TEXT;
+ALTER TABLE students ADD COLUMN IF NOT EXISTS expel_date TIMESTAMP;
+
+CREATE TABLE IF NOT EXISTS group_stats (
+  id SERIAL PRIMARY KEY,
+  "group" VARCHAR(50) NOT NULL UNIQUE,
+  enrolled INTEGER NOT NULL DEFAULT 0,
+  remaining INTEGER NOT NULL DEFAULT 0
+);
+
+INSERT INTO group_stats ("group", enrolled, remaining)
+VALUES ('10А', 30, 30), ('10Б', 30, 30), ('11А', 30, 30), ('11Б', 30, 30)
+ON CONFLICT ("group") DO NOTHING;
