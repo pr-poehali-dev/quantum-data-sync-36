@@ -5,6 +5,7 @@ import { StudentsTable } from "@/components/StudentsTable"
 import { GradesChart } from "@/components/GradesChart"
 import { RemarksTable } from "@/components/RemarksTable"
 import { ExpelledTable } from "@/components/ExpelledTable"
+import { HoursTable } from "@/components/HoursTable"
 
 interface Props {
   username: string
@@ -30,6 +31,7 @@ export default function Index({ username, onLogout }: Props) {
               <p className="text-muted-foreground">Ежемесячные контрольные работы и среднегодовые результаты</p>
             </div>
             <StatsCards />
+            <HoursTable />
             <RemarksTable />
             <StudentsTable showAll />
             <ExpelledTable />

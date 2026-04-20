@@ -8,6 +8,7 @@ import Icon from "@/components/ui/icon"
 import { StudentModal } from "@/components/StudentModal"
 import { GradesModal } from "@/components/GradesModal"
 import { GroupsModal } from "@/components/GroupsModal"
+import { StudentCardModal } from "@/components/StudentCardModal"
 import { apiGetStudents, apiAddStudent, apiUpdateStudent, apiExpelStudent, Student } from "@/lib/api"
 
 const MONTHS = ["Сен", "Окт", "Ноя", "Дек", "Янв", "Фев", "Мар", "Апр", "Май", "Июн"]
@@ -21,9 +22,10 @@ function getAverageBadge(avg: number) {
   return <Badge className="bg-red-400/15 text-red-400 border-red-400/30">{avg.toFixed(1)}%</Badge>
 }
 
-function getScore(student: Student, month: string) {
+function getBestScore(student: Student, month: string) {
   const g = student.grades.find(g => g.month === month)
-  return g ? g.score : null
+  if (!g) return null
+  return g.best_score ?? g.score
 }
 
 interface Props {
@@ -40,6 +42,7 @@ export function StudentsTable({ showAll }: Props) {
   const [addOpen, setAddOpen] = useState(false)
   const [editStudent, setEditStudent] = useState<Student | null>(null)
   const [gradesStudent, setGradesStudent] = useState<Student | null>(null)
+  const [cardStudent, setCardStudent] = useState<Student | null>(null)
   const [groupsOpen, setGroupsOpen] = useState(false)
 
   const load = useCallback(async () => {
@@ -89,6 +92,7 @@ export function StudentsTable({ showAll }: Props) {
               <CardTitle className="text-foreground flex items-center gap-2">
                 <Icon name="Users" size={18} className="text-primary" />
                 {showAll ? "Все студенты" : "Студенты"}
+                {!loading && <span className="text-xs font-normal text-muted-foreground">({filtered.length})</span>}
               </CardTitle>
               <div className="flex gap-2 self-start sm:self-auto">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 border-border" onClick={() => setGroupsOpen(true)}>
@@ -105,15 +109,12 @@ export function StudentsTable({ showAll }: Props) {
             <div className="flex flex-wrap gap-2">
               <div className="relative flex-1 min-w-[160px]">
                 <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Поиск..."
-                  value={search}
+                <Input placeholder="Поиск..." value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="pl-8 h-8 text-sm bg-background"
-                />
+                  className="pl-8 h-8 text-sm bg-background" />
               </div>
               <Select value={filterGroup} onValueChange={setFilterGroup}>
-                <SelectTrigger className="h-8 w-[110px] text-sm bg-background">
+                <SelectTrigger className="h-8 w-[120px] text-sm bg-background">
                   <SelectValue placeholder="Группа" />
                 </SelectTrigger>
                 <SelectContent className="bg-card border-border">
@@ -138,18 +139,18 @@ export function StudentsTable({ showAll }: Props) {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
-              <Icon name="Loader2" size={20} className="animate-spin" />
-              Загрузка...
+              <Icon name="Loader2" size={20} className="animate-spin" />Загрузка...
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border">
+                    <th className="text-center py-3 px-2 text-muted-foreground font-medium w-8">№</th>
                     <th className="text-left py-3 px-2 text-muted-foreground font-medium">Студент</th>
                     <th className="text-left py-3 px-2 text-muted-foreground font-medium">Группа</th>
                     {MONTHS.map(m => (
-                      <th key={m} className="text-center py-3 px-1 text-muted-foreground font-medium min-w-[40px]">{m}</th>
+                      <th key={m} className="text-center py-3 px-1 text-muted-foreground font-medium min-w-[38px]">{m}</th>
                     ))}
                     <th className="text-center py-3 px-2 text-muted-foreground font-medium">Ср. год</th>
                     <th className="text-center py-3 px-2 text-muted-foreground font-medium">Действия</th>
@@ -157,43 +158,44 @@ export function StudentsTable({ showAll }: Props) {
                 </thead>
                 <tbody>
                   {displayed.map((student, idx) => (
-                    <tr key={student.id} className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${idx % 2 === 0 ? "" : "bg-muted/10"}`}>
+                    <tr key={student.id}
+                      className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${idx % 2 === 0 ? "" : "bg-muted/10"}`}>
+                      <td className="py-3 px-2 text-center text-xs text-muted-foreground font-mono">{idx + 1}</td>
                       <td className="py-3 px-2">
-                        <div className="flex items-center gap-2">
+                        <button
+                          className="flex items-center gap-2 hover:text-primary transition-colors text-left"
+                          onClick={() => setCardStudent(student)}
+                          title="Открыть карточку студента"
+                        >
                           <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">
                             {student.name[0]}
                           </div>
-                          <span className="font-medium text-foreground whitespace-nowrap">{student.name}</span>
-                        </div>
+                          <span className="font-medium text-foreground whitespace-nowrap hover:text-primary">{student.name}</span>
+                        </button>
                       </td>
                       <td className="py-3 px-2 text-muted-foreground">{student.group}</td>
                       {MONTHS.map(m => {
-                        const score = getScore(student, m)
+                        const best = getBestScore(student, m)
+                        const orig = student.grades.find(g => g.month === m)?.score ?? null
+                        const hasBetter = best !== null && orig !== null && best > orig && orig > 0
                         return (
-                          <td key={m} className={`py-3 px-1 text-center font-semibold ${score !== null ? getScoreColor(score) : "text-muted-foreground"}`}>
-                            {score !== null ? score : "—"}
+                          <td key={m} className={`py-3 px-1 text-center font-semibold ${best !== null && best > 0 ? getScoreColor(best) : "text-muted-foreground"}`}>
+                            <span title={hasBetter ? `Основной: ${orig}, лучший: ${best}` : undefined}>
+                              {best !== null && best > 0 ? best : "—"}
+                              {hasBetter && <span className="text-[9px] align-super text-green-400">↑</span>}
+                            </span>
                           </td>
                         )
                       })}
                       <td className="py-3 px-2 text-center">{getAverageBadge(student.average)}</td>
                       <td className="py-3 px-2">
                         <div className="flex items-center justify-center gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0"
-                            title="Редактировать оценки"
-                            onClick={() => setGradesStudent(student)}
-                          >
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Оценки и пересдачи"
+                            onClick={() => setGradesStudent(student)}>
                             <Icon name="ClipboardEdit" size={14} className="text-primary" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0"
-                            title="Редактировать студента"
-                            onClick={() => setEditStudent(student)}
-                          >
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Редактировать студента"
+                            onClick={() => setEditStudent(student)}>
                             <Icon name="Pencil" size={14} className="text-muted-foreground" />
                           </Button>
                         </div>
@@ -202,7 +204,7 @@ export function StudentsTable({ showAll }: Props) {
                   ))}
                   {displayed.length === 0 && (
                     <tr>
-                      <td colSpan={MONTHS.length + 4} className="py-12 text-center text-muted-foreground">
+                      <td colSpan={MONTHS.length + 5} className="py-12 text-center text-muted-foreground">
                         Студенты не найдены
                       </td>
                     </tr>
@@ -229,12 +231,19 @@ export function StudentsTable({ showAll }: Props) {
         onClose={() => setEditStudent(null)}
         onSave={handleEdit}
         onExpel={handleExpel}
+        onDeleted={load}
         student={editStudent}
       />
       <GradesModal
         open={!!gradesStudent}
         onClose={() => setGradesStudent(null)}
         student={gradesStudent}
+        onSaved={load}
+      />
+      <StudentCardModal
+        open={!!cardStudent}
+        onClose={() => setCardStudent(null)}
+        student={cardStudent}
         onSaved={load}
       />
       <GroupsModal

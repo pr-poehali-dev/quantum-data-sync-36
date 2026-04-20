@@ -42,14 +42,21 @@ def handler(event: dict, context) -> dict:
 
         cur.execute("""
             SELECT s.id, s.name, s.group,
-                   COALESCE(ROUND(AVG(CASE WHEN g.score > 0 THEN g.score END)::numeric, 1), 0) as average,
-                   json_agg(json_build_object('month', g.month, 'year', g.year, 'score', g.score) ORDER BY g.year, CASE g.month
+                   COALESCE(ROUND(AVG(CASE WHEN best.best_score > 0 THEN best.best_score END)::numeric, 1), 0) as average,
+                   json_agg(json_build_object('month', best.month, 'year', best.year, 'score', best.score, 'best_score', best.best_score)
+                     ORDER BY best.year, CASE best.month
                      WHEN 'Сен' THEN 1 WHEN 'Окт' THEN 2 WHEN 'Ноя' THEN 3 WHEN 'Дек' THEN 4
                      WHEN 'Янв' THEN 5 WHEN 'Фев' THEN 6 WHEN 'Мар' THEN 7 WHEN 'Апр' THEN 8
                      WHEN 'Май' THEN 9 WHEN 'Июн' THEN 10
-                     ELSE 11 END) FILTER (WHERE g.id IS NOT NULL) as grades
+                     ELSE 11 END) FILTER (WHERE best.id IS NOT NULL) as grades
             FROM students s
-            LEFT JOIN grades g ON g.student_id = s.id
+            LEFT JOIN (
+                SELECT g.id, g.student_id, g.month, g.year, g.score,
+                       GREATEST(g.score, COALESCE(MAX(r.score), 0)) as best_score
+                FROM grades g
+                LEFT JOIN retakes r ON r.student_id=g.student_id AND r.month=g.month AND r.year=g.year
+                GROUP BY g.id, g.student_id, g.month, g.year, g.score
+            ) best ON best.student_id = s.id
             WHERE s.expelled = FALSE OR s.expelled IS NULL
             GROUP BY s.id, s.name, s.group
             ORDER BY s.name

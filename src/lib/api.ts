@@ -115,7 +115,20 @@ export async function apiUpdateHours(group: string, year: number, plan_hours: nu
   return r.json()
 }
 
-export interface Grade { month: string; year: number; score: number }
+export interface Grade { month: string; year: number; score: number; best_score?: number }
+
+export interface Retake { id: number; student_id: number; month: string; year: number; attempt: number; score: number }
+
+export async function apiGetRetakes(student_id: number) {
+  const r = await fetch(`${URLS.grades}?type=retakes&student_id=${student_id}`)
+  const data = await r.json()
+  return data.retakes as Retake[]
+}
+
+export async function apiUpdateRetake(student_id: number, month: string, year: number, attempt: number, score: number) {
+  const r = await fetch(`${URLS.grades}?type=retakes`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id, month, year, attempt, score }) })
+  return r.json()
+}
 
 export interface Student {
   id: number; name: string; group: string; average: number; grades: Grade[]
