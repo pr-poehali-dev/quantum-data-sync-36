@@ -1,0 +1,50 @@
+{
+  "name": "journal-app",
+  "version": "1.0.0",
+  "description": "Журнал успеваемости студентов",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.journal.app",
+    "productName": "Журнал успеваемости",
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Журнал успеваемости"
+    },
+    "extraResources": [
+      {
+        "from": "../server",
+        "to": "server",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../frontend/dist",
+        "to": "frontend",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../python-embedded",
+        "to": "python",
+        "filter": ["**/*"]
+      }
+    ],
+    "files": [
+      "main.js",
+      "icon.ico"
+    ]
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}
