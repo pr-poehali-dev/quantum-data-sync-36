@@ -9,11 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Icon from "@/components/ui/icon"
 import { apiGetRemarks, apiAddRemark, apiUpdateRemark, apiDeleteRemark, apiGetStudents, Remark, Student } from "@/lib/api"
 
+const PAGE_SIZE = 5
+
 export function RemarksTable() {
   const [remarks, setRemarks] = useState<Remark[]>([])
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [page, setPage] = useState(1)
 
   const [addOpen, setAddOpen] = useState(false)
   const [selStudent, setSelStudent] = useState("")
@@ -42,6 +45,10 @@ export function RemarksTable() {
     r.group.toLowerCase().includes(search.toLowerCase()) ||
     r.text.toLowerCase().includes(search.toLowerCase())
   )
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
   async function handleAdd() {
     if (!selStudent || !text.trim()) return
@@ -84,7 +91,7 @@ export function RemarksTable() {
             <div className="flex items-center gap-2">
               <div className="relative flex-1 min-w-[180px]">
                 <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input placeholder="Поиск..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-8 text-sm bg-background" />
+                <Input placeholder="Поиск..." value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} className="pl-8 h-8 text-sm bg-background" />
               </div>
               <Button size="sm" className="h-8 gap-1.5 shrink-0" onClick={() => setAddOpen(true)}>
                 <Icon name="Plus" size={14} />
@@ -105,7 +112,7 @@ export function RemarksTable() {
             </div>
           ) : (
             <div className="space-y-2">
-              {filtered.map(r => (
+              {paginated.map(r => (
                 <div key={r.id} className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/10 hover:bg-muted/20 transition-colors group">
                   <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0 mt-0.5">
                     {r.student_name[0]}
@@ -135,9 +142,30 @@ export function RemarksTable() {
             </div>
           )}
           {filtered.length > 0 && (
-            <p className="text-xs text-muted-foreground mt-3 text-right">
-              {filtered.length} {filtered.length === 1 ? "замечание" : filtered.length < 5 ? "замечания" : "замечаний"}
-            </p>
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">
+                {filtered.length} {filtered.length === 1 ? "замечание" : filtered.length < 5 ? "замечания" : "замечаний"}
+              </p>
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={safePage === 1}
+                    onClick={() => setPage(p => Math.max(1, p - 1))}>
+                    <Icon name="ChevronLeft" size={14} />
+                  </Button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                    <Button key={p} size="sm" variant={p === safePage ? "default" : "ghost"}
+                      className="h-7 w-7 p-0 text-xs"
+                      onClick={() => setPage(p)}>
+                      {p}
+                    </Button>
+                  ))}
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" disabled={safePage === totalPages}
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
+                    <Icon name="ChevronRight" size={14} />
+                  </Button>
+                </div>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

@@ -1,4 +1,4 @@
-"""CRUD студентов: список, добавление, редактирование, отчисление"""
+"""CRUD студентов: список, добавление, редактирование, отчисление, полное удаление"""
 import json
 import os
 import psycopg2
@@ -60,13 +60,10 @@ def handler(event: dict, context) -> dict:
         students = []
         for row in rows:
             students.append({
-                'id': row[0],
-                'name': row[1],
-                'group': row[2],
+                'id': row[0], 'name': row[1], 'group': row[2],
                 'average': float(row[3]) if row[3] else 0,
                 'grades': row[4] or []
             })
-
         return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'students': students}, ensure_ascii=False)}
 
     if method == 'POST':
@@ -92,10 +89,8 @@ def handler(event: dict, context) -> dict:
             comment = body.get('expel_comment', '').strip()
             conn = get_conn()
             cur = conn.cursor()
-            cur.execute(
-                'UPDATE students SET expelled=TRUE, expel_comment=%s, expel_date=%s WHERE id=%s',
-                (comment, datetime.now(), student_id)
-            )
+            cur.execute('UPDATE students SET expelled=TRUE, expel_comment=%s, expel_date=%s WHERE id=%s',
+                        (comment, datetime.now(), student_id))
             conn.commit()
             conn.close()
             return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
@@ -103,10 +98,7 @@ def handler(event: dict, context) -> dict:
         if action == 'restore':
             conn = get_conn()
             cur = conn.cursor()
-            cur.execute(
-                'UPDATE students SET expelled=FALSE, expel_comment=NULL, expel_date=NULL WHERE id=%s',
-                (student_id,)
-            )
+            cur.execute('UPDATE students SET expelled=FALSE, expel_comment=NULL, expel_date=NULL WHERE id=%s', (student_id,))
             conn.commit()
             conn.close()
             return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
@@ -118,6 +110,20 @@ def handler(event: dict, context) -> dict:
         conn = get_conn()
         cur = conn.cursor()
         cur.execute('UPDATE students SET name=%s, "group"=%s WHERE id=%s', (name, group, student_id))
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
+
+    if method == 'DELETE':
+        body = json.loads(event.get('body') or '{}')
+        student_id = body.get('id')
+        if not student_id:
+            return {'statusCode': 400, 'headers': CORS, 'body': json.dumps({'error': 'ID обязателен'})}
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute('DELETE FROM grades WHERE student_id=%s', (student_id,))
+        cur.execute('DELETE FROM remarks WHERE student_id=%s', (student_id,))
+        cur.execute('DELETE FROM students WHERE id=%s', (student_id,))
         conn.commit()
         conn.close()
         return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}

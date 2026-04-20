@@ -1,4 +1,4 @@
-"""CRUD групп: список, создание, переименование, удаление"""
+"""CRUD групп и часов вычитки: список, создание, переименование, удаление, план/факт часов"""
 import json
 import os
 import psycopg2
@@ -17,7 +17,45 @@ def handler(event: dict, context) -> dict:
         return {'statusCode': 200, 'headers': CORS, 'body': ''}
 
     method = event.get('httpMethod', 'GET')
+    params = event.get('queryStringParameters') or {}
+    resource = params.get('type', 'groups')
 
+    # ── ЧАСЫ ВЫЧИТКИ ──────────────────────────────────────────
+    if resource == 'hours':
+        if method == 'GET':
+            year = int(params.get('year', 2025))
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT h.id, h."group", h.year, h.plan_hours, h.fact_hours
+                FROM hours_plan h WHERE h.year = %s ORDER BY h."group"
+            """, (year,))
+            rows = cur.fetchall()
+            conn.close()
+            hours = [{'id': r[0], 'group': r[1], 'year': r[2], 'plan_hours': r[3], 'fact_hours': r[4]} for r in rows]
+            return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'hours': hours}, ensure_ascii=False)}
+
+        if method == 'PUT':
+            body = json.loads(event.get('body') or '{}')
+            group = body.get('group', '').strip()
+            year = body.get('year', 2025)
+            plan_hours = body.get('plan_hours')
+            fact_hours = body.get('fact_hours')
+            if not group or plan_hours is None or fact_hours is None:
+                return {'statusCode': 400, 'headers': CORS, 'body': json.dumps({'error': 'Заполните все поля'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute("""
+                INSERT INTO hours_plan ("group", year, plan_hours, fact_hours, updated_at)
+                VALUES (%s, %s, %s, %s, NOW())
+                ON CONFLICT ("group", year) DO UPDATE
+                SET plan_hours=EXCLUDED.plan_hours, fact_hours=EXCLUDED.fact_hours, updated_at=NOW()
+            """, (group, int(year), int(plan_hours), int(fact_hours)))
+            conn.commit()
+            conn.close()
+            return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
+
+    # ── ГРУППЫ ────────────────────────────────────────────────
     if method == 'GET':
         conn = get_conn()
         cur = conn.cursor()
@@ -50,6 +88,8 @@ def handler(event: dict, context) -> dict:
         cur.execute('INSERT INTO group_stats ("group", enrolled, remaining) VALUES (%s, %s, %s) RETURNING id',
                     (group, int(enrolled), int(remaining)))
         new_id = cur.fetchone()[0]
+        # также создаём запись в hours_plan
+        cur.execute('INSERT INTO hours_plan ("group", year, plan_hours, fact_hours) VALUES (%s, 2025, 0, 0) ON CONFLICT DO NOTHING', (group,))
         conn.commit()
         conn.close()
         return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True, 'id': new_id})}
@@ -68,6 +108,7 @@ def handler(event: dict, context) -> dict:
             cur = conn.cursor()
             cur.execute('UPDATE group_stats SET "group"=%s WHERE "group"=%s', (new_name, old_name))
             cur.execute('UPDATE students SET "group"=%s WHERE "group"=%s', (new_name, old_name))
+            cur.execute('UPDATE hours_plan SET "group"=%s WHERE "group"=%s', (new_name, old_name))
             conn.commit()
             conn.close()
             return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
@@ -100,6 +141,7 @@ def handler(event: dict, context) -> dict:
             conn.close()
             return {'statusCode': 400, 'headers': CORS, 'body': json.dumps({'error': f'В группе {count} активных студентов. Переведите или отчислите их перед удалением.'})}
         cur.execute('DELETE FROM group_stats WHERE "group"=%s', (group,))
+        cur.execute('DELETE FROM hours_plan WHERE "group"=%s', (group,))
         conn.commit()
         conn.close()
         return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}

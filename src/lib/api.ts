@@ -95,6 +95,26 @@ export async function apiDeleteGroup(group: string) {
   return r.json()
 }
 
+export async function apiDeleteStudent(id: number) {
+  const r = await fetch(URLS.students, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+  return r.json()
+}
+
+export interface HoursPlan {
+  id: number; group: string; year: number; plan_hours: number; fact_hours: number
+}
+
+export async function apiGetHours(year = 2025) {
+  const r = await fetch(`${URLS.groups}?type=hours&year=${year}`)
+  const data = await r.json()
+  return data.hours as HoursPlan[]
+}
+
+export async function apiUpdateHours(group: string, year: number, plan_hours: number, fact_hours: number) {
+  const r = await fetch(`${URLS.groups}?type=hours`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group, year, plan_hours, fact_hours }) })
+  return r.json()
+}
+
 export interface Grade { month: string; year: number; score: number }
 
 export interface Student {
