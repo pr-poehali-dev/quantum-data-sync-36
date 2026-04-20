@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button"
 interface Props {
   activeTab: "dashboard" | "students" | "grades"
   setActiveTab: (tab: "dashboard" | "students" | "grades") => void
+  username: string
+  onLogout: () => void
 }
 
-export function DashboardHeader({ activeTab, setActiveTab }: Props) {
+export function DashboardHeader({ activeTab, setActiveTab, username, onLogout }: Props) {
   const tabs = [
     { id: "dashboard" as const, label: "Дашборд", icon: "LayoutDashboard" },
     { id: "students" as const, label: "Студенты", icon: "Users" },
@@ -44,12 +46,15 @@ export function DashboardHeader({ activeTab, setActiveTab }: Props) {
 
           <div className="flex items-center gap-2">
             <div className="text-right hidden md:block">
-              <p className="text-sm font-medium text-foreground">Администратор</p>
+              <p className="text-sm font-medium text-foreground">{username}</p>
               <p className="text-xs text-muted-foreground">2025–2026 уч. год</p>
             </div>
             <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center">
               <Icon name="User" size={16} className="text-primary" />
             </div>
+            <Button variant="ghost" size="sm" onClick={onLogout} className="h-9 w-9 p-0" title="Выйти">
+              <Icon name="LogOut" size={16} className="text-muted-foreground" />
+            </Button>
           </div>
         </div>
       </div>

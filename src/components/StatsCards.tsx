@@ -1,42 +1,57 @@
+import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import Icon from "@/components/ui/icon"
-
-const stats = [
-  {
-    label: "Всего студентов",
-    value: "124",
-    change: "+6 за месяц",
-    icon: "Users",
-    color: "text-blue-400",
-    bg: "bg-blue-400/10",
-  },
-  {
-    label: "Средний балл (год)",
-    value: "4.2",
-    change: "+0.3 к прошлому году",
-    icon: "TrendingUp",
-    color: "text-green-400",
-    bg: "bg-green-400/10",
-  },
-  {
-    label: "Контрольных в апреле",
-    value: "8",
-    change: "Следующая: 28 апр",
-    icon: "ClipboardList",
-    color: "text-yellow-400",
-    bg: "bg-yellow-400/10",
-  },
-  {
-    label: "Отличников",
-    value: "31",
-    change: "25% от всех студентов",
-    icon: "Star",
-    color: "text-primary",
-    bg: "bg-primary/10",
-  },
-]
+import { apiGetStudents, Student } from "@/lib/api"
 
 export function StatsCards() {
+  const [students, setStudents] = useState<Student[]>([])
+
+  useEffect(() => {
+    apiGetStudents().then(setStudents)
+  }, [])
+
+  const total = students.length
+  const avgScore = students.length
+    ? students.reduce((s, st) => s + st.average, 0) / students.length
+    : 0
+  const passing = students.filter(s => s.average >= 70).length
+  const failing = students.filter(s => s.average < 70).length
+
+  const stats = [
+    {
+      label: "Всего студентов",
+      value: total || "—",
+      change: `${passing} успевают, ${failing} отстают`,
+      icon: "Users",
+      color: "text-blue-400",
+      bg: "bg-blue-400/10",
+    },
+    {
+      label: "Средний балл (год)",
+      value: total ? `${avgScore.toFixed(1)}%` : "—",
+      change: avgScore >= 70 ? "Выше порога 70%" : "Ниже порога 70%",
+      icon: "TrendingUp",
+      color: avgScore >= 70 ? "text-green-400" : "text-red-400",
+      bg: avgScore >= 70 ? "bg-green-400/10" : "bg-red-400/10",
+    },
+    {
+      label: "Успевают (≥70%)",
+      value: passing || "—",
+      change: total ? `${Math.round((passing / total) * 100)}% от всех` : "",
+      icon: "CheckCircle",
+      color: "text-green-400",
+      bg: "bg-green-400/10",
+    },
+    {
+      label: "Отстают (<70%)",
+      value: failing || "—",
+      change: total ? `${Math.round((failing / total) * 100)}% от всех` : "",
+      icon: "AlertCircle",
+      color: "text-red-400",
+      bg: "bg-red-400/10",
+    },
+  ]
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {stats.map((stat) => (

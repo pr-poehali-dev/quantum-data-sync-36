@@ -4,12 +4,22 @@ import { StatsCards } from "@/components/StatsCards"
 import { StudentsTable } from "@/components/StudentsTable"
 import { GradesChart } from "@/components/GradesChart"
 
-export default function Index() {
+interface Props {
+  username: string
+  onLogout: () => void
+}
+
+export default function Index({ username, onLogout }: Props) {
   const [activeTab, setActiveTab] = useState<"dashboard" | "students" | "grades">("dashboard")
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader activeTab={activeTab} setActiveTab={setActiveTab} />
+      <DashboardHeader
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        username={username}
+        onLogout={onLogout}
+      />
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {activeTab === "dashboard" && (
           <div className="space-y-8 animate-fade-in-up">
