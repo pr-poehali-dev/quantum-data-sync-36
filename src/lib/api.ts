@@ -75,8 +75,23 @@ export async function apiGetGroups() {
   return data.groups as GroupStat[]
 }
 
+export async function apiAddGroup(group: string, enrolled: number, remaining: number) {
+  const r = await fetch(URLS.groups, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group, enrolled, remaining }) })
+  return r.json()
+}
+
 export async function apiUpdateGroup(group: string, enrolled: number, remaining: number) {
   const r = await fetch(URLS.groups, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group, enrolled, remaining }) })
+  return r.json()
+}
+
+export async function apiRenameGroup(old_name: string, new_name: string) {
+  const r = await fetch(URLS.groups, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'rename', old_name, new_name }) })
+  return r.json()
+}
+
+export async function apiDeleteGroup(group: string) {
+  const r = await fetch(URLS.groups, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ group }) })
   return r.json()
 }
 
@@ -95,5 +110,5 @@ export interface Remark {
 }
 
 export interface GroupStat {
-  id: number; group: string; enrolled: number; remaining: number
+  id: number; group: string; enrolled: number; remaining: number; student_count?: number
 }

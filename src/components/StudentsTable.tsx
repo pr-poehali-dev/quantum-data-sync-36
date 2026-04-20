@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Icon from "@/components/ui/icon"
 import { StudentModal } from "@/components/StudentModal"
 import { GradesModal } from "@/components/GradesModal"
+import { GroupsModal } from "@/components/GroupsModal"
 import { apiGetStudents, apiAddStudent, apiUpdateStudent, apiExpelStudent, Student } from "@/lib/api"
 
 const MONTHS = ["Сен", "Окт", "Ноя", "Дек", "Янв", "Фев", "Мар", "Апр", "Май", "Июн"]
@@ -39,6 +40,7 @@ export function StudentsTable({ showAll }: Props) {
   const [addOpen, setAddOpen] = useState(false)
   const [editStudent, setEditStudent] = useState<Student | null>(null)
   const [gradesStudent, setGradesStudent] = useState<Student | null>(null)
+  const [groupsOpen, setGroupsOpen] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -88,10 +90,16 @@ export function StudentsTable({ showAll }: Props) {
                 <Icon name="Users" size={18} className="text-primary" />
                 {showAll ? "Все студенты" : "Студенты"}
               </CardTitle>
-              <Button size="sm" className="h-8 gap-1.5 self-start sm:self-auto" onClick={() => setAddOpen(true)}>
-                <Icon name="UserPlus" size={14} />
-                Добавить студента
-              </Button>
+              <div className="flex gap-2 self-start sm:self-auto">
+                <Button size="sm" variant="outline" className="h-8 gap-1.5 border-border" onClick={() => setGroupsOpen(true)}>
+                  <Icon name="FolderCog" size={14} />
+                  <span className="hidden sm:inline">Группы</span>
+                </Button>
+                <Button size="sm" className="h-8 gap-1.5" onClick={() => setAddOpen(true)}>
+                  <Icon name="UserPlus" size={14} />
+                  Добавить студента
+                </Button>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -228,6 +236,11 @@ export function StudentsTable({ showAll }: Props) {
         onClose={() => setGradesStudent(null)}
         student={gradesStudent}
         onSaved={load}
+      />
+      <GroupsModal
+        open={groupsOpen}
+        onClose={() => setGroupsOpen(false)}
+        onChanged={load}
       />
     </>
   )

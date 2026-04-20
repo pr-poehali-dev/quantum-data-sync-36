@@ -1,11 +1,11 @@
-"""CRUD статистики групп: набор и остаток"""
+"""CRUD групп: список, создание, переименование, удаление"""
 import json
 import os
 import psycopg2
 
 CORS = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
 }
 
@@ -21,15 +21,57 @@ def handler(event: dict, context) -> dict:
     if method == 'GET':
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute('SELECT id, "group", enrolled, remaining FROM group_stats ORDER BY "group"')
+        cur.execute("""
+            SELECT gs.id, gs."group", gs.enrolled, gs.remaining,
+                   COUNT(s.id) as student_count
+            FROM group_stats gs
+            LEFT JOIN students s ON s."group" = gs."group" AND (s.expelled = FALSE OR s.expelled IS NULL)
+            GROUP BY gs.id, gs."group", gs.enrolled, gs.remaining
+            ORDER BY gs."group"
+        """)
         rows = cur.fetchall()
         conn.close()
-        groups = [{'id': r[0], 'group': r[1], 'enrolled': r[2], 'remaining': r[3]} for r in rows]
+        groups = [{'id': r[0], 'group': r[1], 'enrolled': r[2], 'remaining': r[3], 'student_count': r[4]} for r in rows]
         return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'groups': groups}, ensure_ascii=False)}
+
+    if method == 'POST':
+        body = json.loads(event.get('body') or '{}')
+        group = body.get('group', '').strip()
+        enrolled = body.get('enrolled', 0)
+        remaining = body.get('remaining', 0)
+        if not group:
+            return {'statusCode': 400, 'headers': CORS, 'body': json.dumps({'error': 'Название группы обязательно'})}
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute('SELECT id FROM group_stats WHERE "group" = %s', (group,))
+        if cur.fetchone():
+            conn.close()
+            return {'statusCode': 400, 'headers': CORS, 'body': json.dumps({'error': 'Группа уже существует'})}
+        cur.execute('INSERT INTO group_stats ("group", enrolled, remaining) VALUES (%s, %s, %s) RETURNING id',
+                    (group, int(enrolled), int(remaining)))
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True, 'id': new_id})}
 
     if method == 'PUT':
         body = json.loads(event.get('body') or '{}')
         group = body.get('group', '').strip()
+        action = body.get('action', 'update_stats')
+
+        if action == 'rename':
+            old_name = body.get('old_name', '').strip()
+            new_name = body.get('new_name', '').strip()
+            if not old_name or not new_name:
+                return {'statusCode': 400, 'headers': CORS, 'body': json.dumps({'error': 'Укажите старое и новое название'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute('UPDATE group_stats SET "group"=%s WHERE "group"=%s', (new_name, old_name))
+            cur.execute('UPDATE students SET "group"=%s WHERE "group"=%s', (new_name, old_name))
+            conn.commit()
+            conn.close()
+            return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
+
         enrolled = body.get('enrolled')
         remaining = body.get('remaining')
         if not group or enrolled is None or remaining is None:
@@ -41,6 +83,23 @@ def handler(event: dict, context) -> dict:
             VALUES (%s, %s, %s)
             ON CONFLICT ("group") DO UPDATE SET enrolled=EXCLUDED.enrolled, remaining=EXCLUDED.remaining
         """, (group, int(enrolled), int(remaining)))
+        conn.commit()
+        conn.close()
+        return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
+
+    if method == 'DELETE':
+        body = json.loads(event.get('body') or '{}')
+        group = body.get('group', '').strip()
+        if not group:
+            return {'statusCode': 400, 'headers': CORS, 'body': json.dumps({'error': 'Название группы обязательно'})}
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute('SELECT COUNT(*) FROM students WHERE "group"=%s AND (expelled=FALSE OR expelled IS NULL)', (group,))
+        count = cur.fetchone()[0]
+        if count > 0:
+            conn.close()
+            return {'statusCode': 400, 'headers': CORS, 'body': json.dumps({'error': f'В группе {count} активных студентов. Переведите или отчислите их перед удалением.'})}
+        cur.execute('DELETE FROM group_stats WHERE "group"=%s', (group,))
         conn.commit()
         conn.close()
         return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
